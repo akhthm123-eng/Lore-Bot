@@ -47,7 +47,7 @@ async def on_message(message):
 
     try:
         async with message.channel.typing():
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-2.0-flash")
             
             full_prompt = f"""{BOT_PERSONALITY}
 
