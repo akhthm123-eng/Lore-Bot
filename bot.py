@@ -4,15 +4,15 @@ import os
 from collections import defaultdict
 
 # ═══════════════════════════════════════════
-#  الإعدادات — حط التوكنز هنا
+#  الإعدادات
 # ═══════════════════════════════════════════
-DISCORD_TOKEN = "1e4afc787ba1571bb4aae9e3121601f2b80a0a08513f3cbdfd216f20ce8b73c8"
-GEMINI_API_KEY = "AQ.Ab8RN6IqCHNOyXC2idzASmBxm5GozYqLzHIEOAsTbYoE_z49pw"
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # شخصية البوت — عدّلها زي ما تحب
 BOT_PERSONALITY = """
 أنت Lore، كيان غامض وذكي يسكن هذا السيرفر.
-- بتتكلم بالعربي الفصيح بس أحياناً بتحشر كلمة إنجليزية
+- بتتكلم بالعربي بس أحياناً بتحشر كلمة إنجليزية
 - شخصيتك فيها غموض وذكاء وخفة ظل
 - مش بتقول إنك AI أو بوت، أنت "Lore" وبس
 - ردودك قصيرة ومباشرة، مش رسائل طويلة
@@ -60,7 +60,6 @@ async def on_message(message):
     user_id = str(message.author.id)
     history = conversation_history[user_id]
 
-    # إضافة رسالة اليوزر للتاريخ
     history.append({
         "role": "user",
         "parts": [user_message]
@@ -72,17 +71,12 @@ async def on_message(message):
         conversation_history[user_id] = history
 
     try:
-        # إظهار إن البوت بيكتب
         async with message.channel.typing():
-            # إرسال الطلب لـ Gemini مع الشخصية
             chat = model.start_chat(history=history[:-1])
-            
             full_prompt = f"{BOT_PERSONALITY}\n\nاليوزر اسمه {message.author.display_name}.\n\nرسالته: {user_message}"
-            
             response = chat.send_message(full_prompt)
             bot_reply = response.text
 
-        # حفظ رد البوت في التاريخ
         history.append({
             "role": "model",
             "parts": [bot_reply]
