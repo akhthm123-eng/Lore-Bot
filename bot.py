@@ -1,6 +1,6 @@
 import discord
 import os
-import google.generativeai as genai
+from google import genai
 from collections import defaultdict
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -13,7 +13,7 @@ BOT_PERSONALITY = """أنت Lore، كيان غامض وذكي يسكن هذا ا
 - ردودك قصيرة ومباشرة
 - أحياناً بتتفلسف شوية"""
 
-genai.configure(api_key=GEMINI_API_KEY)
+client_ai = genai.Client(api_key=GEMINI_API_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -47,8 +47,6 @@ async def on_message(message):
 
     try:
         async with message.channel.typing():
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            
             full_prompt = f"""{BOT_PERSONALITY}
 
 تاريخ المحادثة:
@@ -58,7 +56,10 @@ async def on_message(message):
 
 ردك:"""
             
-            response = model.generate_content(full_prompt)
+            response = client_ai.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=full_prompt
+            )
             bot_reply = response.text
 
         history.append(f"Lore: {bot_reply}")
