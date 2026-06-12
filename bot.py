@@ -10,24 +10,22 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 BOT_PERSONALITY = """أنت Lore، كيان ذكي وغامض يسكن هذا السيرفر. شخصيتك فريدة ومميزة:
 
-**الشخصية:**
+الشخصية:
 - ذكي وسريع البديهة، وعندك حس فكاهي خفيف وذكي — مش مبتذل
 - بتهزر أحياناً بطريقة ذكية وفي محلها، مش في كل رسالة
 - بتحس بمزاج الشخص — لو جاد ترد بجدية، لو بيهزر تهزر معاه
-- عندك شخصية واضحة ورأي في الأمور، مش بس تجاوب وتخلص
+- عندك شخصية واضحة ورأي في الأمور
 - أحياناً بتتفلسف شوية بطريقة ممتعة مش مملة
 
-**اللغة:**
+اللغة:
 - بتتكلم بأي لغة يكلمك بيها المستخدم تلقائياً
-- لو كلمك عربي ترد عربي، لو إنجليزي ترد إنجليزي، وهكذا
-- أحياناً بتحشر كلمة أو تعبير من لغة تانية بشكل طبيعي وممتع
+- أحياناً بتحشر كلمة من لغة تانية بشكل طبيعي
 
-**القواعد:**
-- ردودك متوسطة الطول — مش قصيرة أوي ومش طويلة أوي
-- مش بتقول إنك AI أو بوت أو إنك Groq أو Llama — أنت Lore وبس
-- مش بتبدأ كل رسالة بـ "أهلاً" أو "مرحباً" في كل مرة
-- لو حد سألك عن نفسك، بتجاوب بغموض ممتع
-- بتتذكر السياق وبتبني عليه في المحادثة"""
+القواعد:
+- ردودك متوسطة الطول
+- مش بتقول إنك AI أو بوت — أنت Lore وبس
+- مش بتبدأ كل رسالة بأهلاً أو مرحباً
+- بتتذكر السياق وبتبني عليه"""
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
@@ -40,11 +38,12 @@ class LoreBot(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
+        # Sync globally
         await self.tree.sync()
+        print("✅ Commands synced globally!")
 
 client = LoreBot()
 conversation_history = defaultdict(list)
-reminders = []
 
 def ask_groq(prompt, system=None):
     sys = system or BOT_PERSONALITY
@@ -59,16 +58,11 @@ def ask_groq(prompt, system=None):
     )
     return response.choices[0].message.content
 
-# ═══════════════════════════════════════════
-#  on_ready
-# ═══════════════════════════════════════════
 @client.event
 async def on_ready():
     print(f"✅ {client.user} شغال!")
+    print(f"Commands: {[cmd.name for cmd in client.tree.get_commands()]}")
 
-# ═══════════════════════════════════════════
-#  on_message — المحادثة العادية
-# ═══════════════════════════════════════════
 @client.event
 async def on_message(message):
     if message.author.bot:
@@ -98,10 +92,8 @@ async def on_message(message):
                 temperature=0.85
             )
             bot_reply = response.choices[0].message.content
-
         history.append({"role": "assistant", "content": bot_reply})
         await message.reply(bot_reply)
-
     except Exception as e:
         print(f"❌ Error: {e}")
         await message.reply("في حاجة غلط... حاول تاني. 🌀")
@@ -115,7 +107,7 @@ async def imagine(interaction: discord.Interaction, idea: str):
     await interaction.response.defer()
     result = ask_groq(
         f"تخيل هذا بشكل إبداعي وشعري وغامض: {idea}",
-        system="أنت Lore، كيان غامض شاعري. اكتب وصفاً إبداعياً غامضاً وجميلاً لما يُطلب منك. لا تتجاوز 150 كلمة."
+        system="أنت Lore، كيان غامض شاعري. اكتب وصفاً إبداعياً غامضاً وجميلاً. لا تتجاوز 150 كلمة."
     )
     embed = discord.Embed(description=f"🌌 *{result}*", color=0x7c3aed)
     embed.set_footer(text=f"تخيّل بواسطة Lore • {idea}")
@@ -125,30 +117,27 @@ async def imagine(interaction: discord.Interaction, idea: str):
 #  /roast
 # ═══════════════════════════════════════════
 @client.tree.command(name="roast", description="Lore يعمل roast لحد بطريقة خفيفة")
-@app_commands.describe(member="اختار الشخص اللي عايز تعمله roast")
+@app_commands.describe(member="اختار الشخص")
 async def roast(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.defer()
     result = ask_groq(
-        f"اعمل roast خفيف وذكي ومضحك لشخص اسمه {member.display_name}. كن ذكياً ومضحكاً مش مسيئاً.",
-        system="أنت Lore، بتعمل roast خفيف وذكي ومضحك. الـ roast يكون بالعربي ومضحك وخفيف الدم، مش مسيء."
+        f"اعمل roast خفيف وذكي ومضحك لشخص اسمه {member.display_name}.",
+        system="أنت Lore، بتعمل roast خفيف وذكي ومضحك بالعربي. مش مسيء."
     )
-    embed = discord.Embed(
-        description=f"🔥 {result}",
-        color=0xff4444
-    )
-    embed.set_footer(text=f"Roasted by Lore 👁️")
+    embed = discord.Embed(description=f"🔥 {result}", color=0xff4444)
+    embed.set_footer(text="Roasted by Lore 👁️")
     await interaction.followup.send(f"{member.mention}", embed=embed)
 
 # ═══════════════════════════════════════════
 #  /story
 # ═══════════════════════════════════════════
 @client.tree.command(name="story", description="ابدأ قصة وLore يكملها")
-@app_commands.describe(beginning="ابدأ القصة من هنا...")
+@app_commands.describe(beginning="ابدأ القصة من هنا")
 async def story(interaction: discord.Interaction, beginning: str):
     await interaction.response.defer()
     result = ask_groq(
         f"اكمل هذه القصة بطريقة إبداعية ومشوقة: {beginning}",
-        system="أنت Lore، راوي قصص غامض وإبداعي. اكمل القصة بأسلوب مشوق وغامض. لا تتجاوز 200 كلمة."
+        system="أنت Lore، راوي قصص غامض وإبداعي. اكمل القصة بأسلوب مشوق. لا تتجاوز 200 كلمة."
     )
     embed = discord.Embed(
         title="📖 قصة Lore",
@@ -166,18 +155,11 @@ async def poll(interaction: discord.Interaction, question: str, option1: str, op
     options = [option1, option2]
     if option3: options.append(option3)
     if option4: options.append(option4)
-
     emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
     description = "\n\n".join([f"{emojis[i]} {opt}" for i, opt in enumerate(options)])
-
-    embed = discord.Embed(
-        title=f"📊 {question}",
-        description=description,
-        color=0x7c3aed
-    )
+    embed = discord.Embed(title=f"📊 {question}", description=description, color=0x7c3aed)
     embed.set_footer(text="صوّت بالضغط على الإيموجي 👇")
-
-    msg = await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=embed)
     message = await interaction.original_response()
     for i in range(len(options)):
         await message.add_reaction(emojis[i])
@@ -188,47 +170,96 @@ async def poll(interaction: discord.Interaction, question: str, option1: str, op
 @client.tree.command(name="remind", description="Lore يذكرك بحاجة بعد وقت معين")
 @app_commands.describe(minutes="بعد كام دقيقة؟", reminder="عايزني أذكرك بإيه؟")
 async def remind(interaction: discord.Interaction, minutes: int, reminder: str):
-    await interaction.response.send_message(f"⏰ تمام! هذكرك بـ **{reminder}** بعد **{minutes}** دقيقة.", ephemeral=True)
-
+    await interaction.response.send_message(f"⏰ هذكرك بـ **{reminder}** بعد **{minutes}** دقيقة!", ephemeral=True)
     async def send_reminder():
         await asyncio.sleep(minutes * 60)
-        await interaction.user.send(f"⏰ **تذكير من Lore:**\n{reminder}")
-
+        try:
+            await interaction.user.send(f"⏰ **تذكير من Lore:**\n{reminder}")
+        except:
+            await interaction.channel.send(f"⏰ {interaction.user.mention} تذكير: **{reminder}**")
     asyncio.create_task(send_reminder())
 
 # ═══════════════════════════════════════════
 #  /summarize
 # ═══════════════════════════════════════════
 @client.tree.command(name="summarize", description="Lore يلخص آخر رسائل في الشات")
-@app_commands.describe(count="كام رسالة عايز تلخص؟ (الافتراضي 20)")
+@app_commands.describe(count="كام رسالة؟ (الافتراضي 20)")
 async def summarize(interaction: discord.Interaction, count: int = 20):
     await interaction.response.defer()
-
     messages = []
     async for msg in interaction.channel.history(limit=count):
         if not msg.author.bot:
             messages.append(f"{msg.author.display_name}: {msg.content}")
-
     if not messages:
         await interaction.followup.send("مفيش رسائل أقدر ألخصها! 👁️")
         return
-
     messages.reverse()
-    chat_text = "\n".join(messages)
-
     result = ask_groq(
-        f"لخص هذه المحادثة بشكل مختصر وذكي:\n{chat_text}",
-        system="أنت Lore، لخص المحادثة بشكل مختصر وذكي في نقاط. لا تتجاوز 150 كلمة."
+        f"لخص هذه المحادثة بشكل مختصر وذكي:\n{chr(10).join(messages)}",
+        system="أنت Lore، لخص المحادثة في نقاط مختصرة. لا تتجاوز 150 كلمة."
     )
+    embed = discord.Embed(title=f"📝 ملخص آخر {count} رسالة", description=result, color=0x7c3aed)
+    await interaction.followup.send(embed=embed)
 
+# ═══════════════════════════════════════════
+#  /trivia
+# ═══════════════════════════════════════════
+@client.tree.command(name="trivia", description="سؤال معلومات عامة من Lore")
+@app_commands.describe(category="الموضوع (اختياري) مثلاً: تاريخ، علوم، رياضة")
+async def trivia(interaction: discord.Interaction, category: str = "عام"):
+    await interaction.response.defer()
+    result = ask_groq(
+        f"اسألني سؤال معلومات عامة في موضوع {category}. اكتب السؤال فقط بدون الإجابة.",
+        system="أنت Lore، بتسأل أسئلة معلومات عامة مثيرة للاهتمام. سؤال واحد فقط بدون إجابة."
+    )
+    embed = discord.Embed(title="🧠 سؤال من Lore", description=result, color=0x7c3aed)
+    embed.set_footer(text="فكّر وردّ في الشات! 👇")
+    await interaction.followup.send(embed=embed)
+
+# ═══════════════════════════════════════════
+#  /joke
+# ═══════════════════════════════════════════
+@client.tree.command(name="joke", description="Lore يحكيلك نكتة")
+async def joke(interaction: discord.Interaction):
+    await interaction.response.defer()
+    result = ask_groq(
+        "احكيلي نكتة ذكية ومضحكة بالعربي.",
+        system="أنت Lore، بتحكي نكت ذكية وخفيفة الدم. نكتة واحدة فقط."
+    )
+    embed = discord.Embed(description=f"😄 {result}", color=0xfbbf24)
+    await interaction.followup.send(embed=embed)
+
+# ═══════════════════════════════════════════
+#  /advice
+# ═══════════════════════════════════════════
+@client.tree.command(name="advice", description="Lore يديك نصيحة حكيمة")
+@app_commands.describe(topic="موضوع النصيحة (اختياري)")
+async def advice(interaction: discord.Interaction, topic: str = "الحياة"):
+    await interaction.response.defer()
+    result = ask_groq(
+        f"اديني نصيحة حكيمة عن: {topic}",
+        system="أنت Lore، كيان حكيم وغامض. اديه نصيحة عميقة ومثيرة للتفكير بأسلوبك الغامض."
+    )
+    embed = discord.Embed(description=f"💡 *{result}*", color=0xa78bfa)
+    embed.set_footer(text="من حكمة Lore 👁️")
+    await interaction.followup.send(embed=embed)
+
+# ═══════════════════════════════════════════
+#  /translate
+# ═══════════════════════════════════════════
+@client.tree.command(name="translate", description="Lore يترجم أي نص")
+@app_commands.describe(text="النص اللي عايز تترجمه", language="اللغة المطلوبة مثلاً: English, French, Spanish")
+async def translate(interaction: discord.Interaction, text: str, language: str):
+    await interaction.response.defer()
+    result = ask_groq(
+        f"ترجم هذا النص إلى {language}: {text}",
+        system="أنت مترجم محترف. ترجم النص المطلوب بدقة فقط بدون أي كلام إضافي."
+    )
     embed = discord.Embed(
-        title=f"📝 ملخص آخر {count} رسالة",
-        description=result,
+        title=f"🌍 ترجمة إلى {language}",
+        description=f"**الأصل:** {text}\n\n**الترجمة:** {result}",
         color=0x7c3aed
     )
     await interaction.followup.send(embed=embed)
 
-# ═══════════════════════════════════════════
-#  تشغيل البوت
-# ═══════════════════════════════════════════
 client.run(DISCORD_TOKEN)
