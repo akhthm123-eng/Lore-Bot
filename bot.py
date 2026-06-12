@@ -1,10 +1,10 @@
 import discord
 import os
-from groq import Groq
+from google import genai
 from collections import defaultdict
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 BOT_PERSONALITY = """أنت Lore، كيان غامض وذكي يسكن هذا السيرفر.
 - بتتكلم بالعربي بس أحياناً بتحشر كلمة إنجليزية
@@ -13,7 +13,7 @@ BOT_PERSONALITY = """أنت Lore، كيان غامض وذكي يسكن هذا ا
 - ردودك قصيرة ومباشرة
 - أحياناً بتتفلسف شوية"""
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+client_ai = genai.Client(api_key=GEMINI_API_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -40,28 +40,33 @@ async def on_message(message):
 
     user_id = str(message.author.id)
     history = conversation_history[user_id]
-    
-    history.append({"role": "user", "content": user_message})
+    history.append(f"المستخدم: {user_message}")
     if len(history) > 10:
         history = history[-10:]
         conversation_history[user_id] = history
 
     try:
         async with message.channel.typing():
-            messages = [{"role": "system", "content": BOT_PERSONALITY}] + history
-            
-            response = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=messages,
-                max_tokens=500
-            )
-            bot_reply = response.choices[0].message.content
+            full_prompt = f"""{BOT_PERSONALITY}
 
-        history.append({"role": "assistant", "content": bot_reply})
+تاريخ المحادثة:
+{chr(10).join(history[:-1])}
+
+المستخدم اسمه {message.author.display_name} وقالك: {user_message}
+
+ردك:"""
+            
+            response = client_ai.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=full_prompt
+            )
+            bot_reply = response.text
+
+        history.append(f"Lore: {bot_reply}")
         await message.reply(bot_reply)
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Gemini Error: {e}")
         await message.reply("في حاجة غلط... حاول تاني. 🌀")
 
 client.run(DISCORD_TOKEN)
