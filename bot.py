@@ -6,8 +6,8 @@ from collections import defaultdict
 # ═══════════════════════════════════════════
 #  الإعدادات
 # ═══════════════════════════════════════════
-DISCORD_TOKEN = os.getenv("MTUxNDkwOTc3NzIyNDkyOTM3MQ.GaS84z.WMiTMUfnULAPcBj5pZJgBNbEectCj7RP-FET48")
-GEMINI_API_KEY = os.getenv("AQ.Ab8RN6IjWFg1xMM-RCf4F4pVhOJDPKn1YgSj4pMb7rodcfSqzg")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # شخصية البوت — عدّلها زي ما تحب
 BOT_PERSONALITY = """
