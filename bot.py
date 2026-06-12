@@ -1,94 +1,71 @@
 import discord
-import google.generativeai as genai
 import os
+import google.generativeai as genai
 from collections import defaultdict
 
-# ═══════════════════════════════════════════
-#  الإعدادات
-# ═══════════════════════════════════════════
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# شخصية البوت — عدّلها زي ما تحب
-BOT_PERSONALITY = """
-أنت Lore، كيان غامض وذكي يسكن هذا السيرفر.
+BOT_PERSONALITY = """أنت Lore، كيان غامض وذكي يسكن هذا السيرفر.
 - بتتكلم بالعربي بس أحياناً بتحشر كلمة إنجليزية
 - شخصيتك فيها غموض وذكاء وخفة ظل
-- مش بتقول إنك AI أو بوت، أنت "Lore" وبس
-- ردودك قصيرة ومباشرة، مش رسائل طويلة
-- أحياناً بتتفلسف شوية
-"""
+- مش بتقول إنك AI أو بوت، أنت Lore وبس
+- ردودك قصيرة ومباشرة
+- أحياناً بتتفلسف شوية"""
 
-# ═══════════════════════════════════════════
-#  الإعداد
-# ═══════════════════════════════════════════
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
 
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-# بيحفظ تاريخ المحادثة لكل يوزر (آخر 10 رسائل)
 conversation_history = defaultdict(list)
 
-# ═══════════════════════════════════════════
-#  الأحداث
-# ═══════════════════════════════════════════
 @client.event
 async def on_ready():
     print(f"✅ {client.user} شغال!")
 
 @client.event
 async def on_message(message):
-    # تجاهل رسائل البوت نفسه
     if message.author.bot:
         return
-
-    # شيك لو البوت اتمنشن
     if client.user not in message.mentions:
         return
 
-    # امسح المنشن من الرسالة
     user_message = message.content.replace(f"<@{client.user.id}>", "").strip()
 
     if not user_message:
         await message.reply("أيوه؟ 👁️")
         return
 
-    # بناء تاريخ المحادثة
     user_id = str(message.author.id)
     history = conversation_history[user_id]
-
-    history.append({
-        "role": "user",
-        "parts": [user_message]
-    })
-
-    # الاحتفاظ بآخر 10 رسائل بس
+    history.append(f"المستخدم: {user_message}")
     if len(history) > 10:
         history = history[-10:]
         conversation_history[user_id] = history
 
     try:
         async with message.channel.typing():
-            chat = model.start_chat(history=history[:-1])
-            full_prompt = f"{BOT_PERSONALITY}\n\nاليوزر اسمه {message.author.display_name}.\n\nرسالته: {user_message}"
-            response = chat.send_message(full_prompt)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            
+            full_prompt = f"""{BOT_PERSONALITY}
+
+تاريخ المحادثة:
+{chr(10).join(history[:-1])}
+
+المستخدم اسمه {message.author.display_name} وقالك: {user_message}
+
+ردك:"""
+            
+            response = model.generate_content(full_prompt)
             bot_reply = response.text
 
-        history.append({
-            "role": "model",
-            "parts": [bot_reply]
-        })
-
+        history.append(f"Lore: {bot_reply}")
         await message.reply(bot_reply)
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Gemini Error: {e}")
         await message.reply("في حاجة غلط... حاول تاني. 🌀")
 
-# ═══════════════════════════════════════════
-#  تشغيل البوت
-# ═══════════════════════════════════════════
 client.run(DISCORD_TOKEN)
