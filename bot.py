@@ -6,7 +6,7 @@ from collections import defaultdict
 # ═══════════════════════════════════════════
 #  الإعدادات
 # ═══════════════════════════════════════════
-DISCORD_TOKEN = "f1594a67c44413d98385657cc648e54b147409f662f1bd06dfefbd3abdcf2a27"
+DISCORD_TOKEN = "MTUxNDkwOTc3NzIyNDkyOTM3MQ.GIRuZx.hit44HtU_lY5C18M1lWlqsaNRbLHd-rnpVs7Mc"
 GEMINI_API_KEY = "AQ.Ab8RN6IjWFg1xMM-RCf4F4pVhOJDPKn1YgSj4pMb7rodcfSqzg"
 
 # شخصية البوت — عدّلها زي ما تحب
